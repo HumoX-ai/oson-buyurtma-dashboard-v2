@@ -2,7 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, HomeIcon, LogOut, User2 } from "lucide-react";
+import { Building2, HomeIcon, LogOut, User2, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Cookies from "js-cookie";
 
@@ -12,10 +12,16 @@ const Sidebar = () => {
   const navItems = [
     { href: "/dashboard/home", label: "Bosh sahifa", icon: <HomeIcon /> },
     {
+      href: "/dashboard/administration",
+      label: "Adminstratsiya",
+      icon: <Users2 />,
+    },
+    {
       href: "/dashboard/restaurants",
       label: "Restoranlar",
       icon: <Building2 />,
     },
+
     {
       href: "/dashboard/profile",
       label: "Profil",

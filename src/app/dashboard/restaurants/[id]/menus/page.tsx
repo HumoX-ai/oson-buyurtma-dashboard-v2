@@ -1,4 +1,3 @@
-import React from "react";
 import { getRestaurantMenu } from "@/lib/data";
 import {
   Accordion,
@@ -23,7 +22,7 @@ export default async function RestaurantMenu({
 }) {
   const menu = await getRestaurantMenu(parseInt(params.id));
 
-  if (!menu) {
+  if (menu?.length === 0) {
     return (
       <div className="container mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6 text-center">
@@ -38,7 +37,7 @@ export default async function RestaurantMenu({
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6 text-center">Restoran Menyusi</h1>
       <Accordion type="single" collapsible className="w-full">
-        {menu.map((category) => (
+        {menu?.map((category) => (
           <AccordionItem key={category.id} value={`item-${category.id}`}>
             <AccordionTrigger className="text-xl font-semibold">
               {category.name}

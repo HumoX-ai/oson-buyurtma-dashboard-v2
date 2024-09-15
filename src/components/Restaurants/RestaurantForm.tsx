@@ -33,7 +33,7 @@ interface RestaurantFormProps {
 }
 
 interface UserInfo {
-  id: string;
+  id: number;
   name: string;
   role: string;
   phone: string;
@@ -55,6 +55,7 @@ export default function RestaurantForm({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<UserInfo[]>([]);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
   console.log(user);
 
   const getUsers = async () => {
@@ -160,34 +161,43 @@ export default function RestaurantForm({
         <FormField
           control={form.control}
           name="owner"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Admin</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value ?? undefined} // Ensure value is not null
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue>
-                      {field.value ? field.value : "Foydalanuvchi tanlang"}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {user &&
-                    user
-                      .filter((user) => user.role === "restaurant_owner")
-                      .map((user: UserInfo) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.name} - ({user.phone})
-                        </SelectItem>
-                      ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            return (
+              <FormItem>
+                <FormLabel>Admin</FormLabel>
+                <Select
+                  onValueChange={(value) => {
+                    const selectedUser = user.find(
+                      (u) => u.id === parseInt(value)
+                    );
+                    field.onChange(value); // Backendga jo'natish uchun id qiymati
+                    setSelectedUserName(
+                      selectedUser ? selectedUser.name : null
+                    ); // Name ko'rsatish uchun
+                  }}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Adminni tanlang">
+                        {selectedUserName || "Adminni tanlang"}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {user &&
+                      user
+                        .filter((user) => user.role === "restaurant_owner")
+                        .map((user: UserInfo) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.name} - ({user.phone})
+                          </SelectItem>
+                        ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <FormField

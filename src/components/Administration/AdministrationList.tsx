@@ -1,14 +1,7 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "@/store/store";
-import {
-  deleteRestaurant,
-  setRestaurants,
-  addRestaurant,
-  updateRestaurant,
-} from "@/store/slices/restaurantSlice";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "@/hooks/use-toast";
@@ -20,33 +13,53 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import RestaurantCard from "./RestaurantCard";
-import RestaurantForm from "./RestaurantForm";
-import { Restaurant } from "@/lib/data";
+import { UserInfo, Restaurant } from "@/lib/data";
+import {
+  addUser,
+  deleteUser,
+  setUsers,
+  updateUser,
+} from "@/store/slices/userSlice";
+import AdministrationForm from "./AdministrationForm";
+import AdministrationCard from "./AdministrationCard";
 
-interface RestaurantListProps {
-  initialRestaurants: Restaurant[];
+interface AdministrationListProps {
+  initialAdministration: UserInfo[];
+  restaurants: Restaurant[]; // Restoran ma'lumotlari ham qabul qilinadi
 }
 
-export default function RestaurantList({
-  initialRestaurants,
-}: RestaurantListProps) {
+export default function AdministrationList({
+  initialAdministration,
+  restaurants,
+}: AdministrationListProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { restaurants } = useSelector((state: RootState) => state.restaurant);
+  const { users } = useSelector((state: RootState) => state.user);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | null>(
-    null
+  const [editingUser, setEditingUser] = useState<UserInfo | null>(null);
+
+  // Restoranlarni foydalanuvchi ID si bo'yicha guruhlash
+  const restaurantsByOwner = restaurants.reduce<Record<number, Restaurant[]>>(
+    (acc, restaurant) => {
+      if (!acc[restaurant.owner]) {
+        acc[restaurant.owner] = [];
+      }
+      acc[restaurant.owner].push(restaurant);
+      return acc;
+    },
+    {}
   );
 
+  console.log("restaurantsByOwner", restaurantsByOwner);
+
   useEffect(() => {
-    dispatch(setRestaurants(initialRestaurants));
-  }, [dispatch, initialRestaurants]);
+    dispatch(setUsers(initialAdministration));
+  }, [dispatch, initialAdministration]);
 
   const handleDelete = async (id: number) => {
     try {
       const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/restaurants/${id}/`,
+        `${process.env.NEXT_PUBLIC_AUTH}/auth/users/${id}/`,
         {
           headers: {
             Authorization: `Bearer ${Cookies.get("access_token")}`,
@@ -55,14 +68,14 @@ export default function RestaurantList({
       );
 
       if (response.status === 204) {
-        dispatch(deleteRestaurant(id));
+        dispatch(deleteUser(id));
         toast({
-          title: "Restoran o'chirildi",
-          description: "Restoran muvaffaqiyatli o'chirildi",
+          title: "Admin o'chirildi",
+          description: "Admin muvaffaqiyatli o'chirildi",
           variant: "success",
         });
       } else {
-        console.error("Failed to delete restaurant from server");
+        console.error("Failed to delete admin from server");
       }
     } catch (error) {
       console.error("An error occurred:", error);
@@ -73,9 +86,9 @@ export default function RestaurantList({
     setIsLoading(true);
     try {
       let response;
-      if (editingRestaurant) {
+      if (editingUser) {
         response = await axios.patch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/restaurants/${editingRestaurant.id}/`,
+          `${process.env.NEXT_PUBLIC_AUTH}/auth/users/${editingUser.id}/`,
           formData,
           {
             headers: {
@@ -84,9 +97,7 @@ export default function RestaurantList({
             },
           }
         );
-        dispatch(
-          updateRestaurant({ id: editingRestaurant.id, ...response.data })
-        );
+        dispatch(updateUser({ id: editingUser.id, ...response.data }));
         setIsLoading(false);
         toast({
           title: "Restoran yangilandi",
@@ -95,7 +106,7 @@ export default function RestaurantList({
         });
       } else {
         response = await axios.post(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/restaurants/`,
+          `${process.env.NEXT_PUBLIC_AUTH}/auth/register/`,
           formData,
           {
             headers: {
@@ -104,16 +115,16 @@ export default function RestaurantList({
             },
           }
         );
-        dispatch(addRestaurant(response.data));
+        dispatch(addUser(response.data));
         setIsLoading(false);
         toast({
           title: "Restoran qo'shildi",
-          description: "Yangi restoran muvaffaqiyatli qo'shildi",
+          description: "Yangi admin muvaffaqiyatli qo'shildi",
           variant: "success",
         });
       }
       setIsDialogOpen(false);
-      setEditingRestaurant(null);
+      setEditingUser(null);
     } catch (error) {
       console.error("An error occurred:", error);
       setIsLoading(false);
@@ -125,44 +136,37 @@ export default function RestaurantList({
     }
   };
 
-  const openEditDialog = (restaurant: Restaurant) => {
-    setEditingRestaurant(restaurant);
+  const openEditDialog = (user: UserInfo) => {
+    setEditingUser(user);
     setIsDialogOpen(true);
   };
 
   return (
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Restoranlar</h1>
+        <h1 className="text-2xl font-bold">Restoranlar adminstratorlari</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setEditingRestaurant(null)}>
-              Yangi restoran qo&#39;shish
+            <Button onClick={() => setEditingUser(null)}>
+              Yangi admin qo&#39;shish
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingRestaurant
-                  ? "Adminni tahrirlash"
-                  : "Yangi restoran qo'shish"}
+                {editingUser ? "Adminni tahrirlash" : "Yangi admin qo'shish"}
               </DialogTitle>
             </DialogHeader>
-            <RestaurantForm
+            <AdministrationForm
               isLoading={isLoading}
               onSubmit={handleSubmit}
               initialData={
-                editingRestaurant
+                editingUser
                   ? {
-                      name: editingRestaurant.name,
-                      contact_phone: editingRestaurant.contact_phone,
-                      contact_email: editingRestaurant.contact_email,
-                      status: editingRestaurant.status as unknown as
-                        | "active"
-                        | "archived", // Ensure this is "active" or "archived"
-                      owner: editingRestaurant.owner.toString(),
-                      address: editingRestaurant.address,
-                      description: editingRestaurant.description,
+                      name: editingUser.name,
+                      phone: editingUser.phone,
+                      password: "",
+                      role: editingUser.role as "restaurant_owner",
                     }
                   : undefined
               }
@@ -171,18 +175,19 @@ export default function RestaurantList({
         </Dialog>
       </div>
 
-      {restaurants.length === 0 ? (
+      {users.length === 0 ? (
         <p className="text-center text-gray-500 text-xl">
           Restoranlar mavjud emas
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 items-stretch gap-6">
-          {restaurants.map((restaurant) => (
-            <RestaurantCard
-              key={restaurant.id}
-              restaurant={restaurant}
-              onEdit={() => openEditDialog(restaurant)}
-              onDelete={() => handleDelete(restaurant.id)}
+        <div className="grid grid-cols-1 items-start sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {users.map((user) => (
+            <AdministrationCard
+              key={user.id}
+              user={user}
+              restaurant={restaurantsByOwner[user.id] || []}
+              onEdit={() => openEditDialog(user)}
+              onDelete={() => handleDelete(user.id)}
             />
           ))}
         </div>

@@ -90,3 +90,15 @@ export async function getUserInfo(token: string): Promise<UserInfo | null> {
     return null;
   }
 }
+
+export async function getRestaurantOwner(): Promise<UserInfo[] | undefined> {
+  try {
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_AUTH}/auth/users/`);
+    const filteredUsers = res.data.results.filter(
+      (user: UserInfo) => user.role === "restaurant_owner"
+    );
+    return filteredUsers;
+  } catch (error) {
+    console.log("error", error);
+  }
+}
